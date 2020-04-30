@@ -5,7 +5,7 @@
 rsyslog_config: false
 
 # defines primary domain name
-rsyslog_pri_domain_name: example.org
+rsyslog_pri_domain_name: "{{ www_domain|default('example.org') }}"
 
 # defines if high precision timestamps should be used instead of the traditional log format
 rsyslog_highprecision: false
