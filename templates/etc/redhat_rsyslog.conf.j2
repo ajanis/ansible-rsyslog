@@ -84,13 +84,40 @@ local7.*                                                /var/log/boot.log
 #$ActionQueueType LinkedList   # run asynchronously
 #$ActionResumeRetryCount -1    # infinite retries if host is down
 # remote host is: name/ip:port, e.g. 192.168.0.1:514, port optional
-#*.* @@remote-host:514
-{% for item in rsyslog_servers %}
-{% if item.proto == "tcp" %}
-*.* @@{{ item.name }}:{{ item.port }}
+
+
+{% if rsyslog_options|length>0 %}
+    {% for option in rsyslog_options %}
+        {{ option }}
+    {% endfor %}
 {% endif %}
-{% if item.proto == "udp" %}
-*.* @{{ item.name }}:{{ item.port }}
+
+# Set our initial redirects here to ensure we catch everything
+{% for item in rsyslog_defaults %}
+{% if item.name|length>0 %}
+{% set selector = [item.selectors|default('*.*')]|flatten|join(';') %}
+{% set proto = item.proto|default('') %}
+{% if proto == 'nosync' %}
+{% set prefix = '' %}
+{% elif proto == 'pipe' %}
+{% set prefix = '|' %}
+{% elif proto == 'tcp' %}
+{% set prefix = '@@' %}
+{% elif proto == 'udp' %}
+{% set prefix = '@' %}
+{% else %}
+{% set prefix = '' %}
+{% endif %}
+{% if item.port|default(0)|int>0 %}
+{% set suffix = ':' + item.port %}
+{% else %}
+{% set suffix = '' %}
+{% endif %}
+{% if item.format|default('')|length>0 %}
+{% set format = ';' + item.format %}
+{% else %}
+{% set format = '' %}
+{% endif %}
+{{ selector }} {{ prefix }}{{ item.name }}{{ suffix }}{{ format }}
 {% endif %}
 {% endfor %}
-# ### end of the forwarding rule ###
