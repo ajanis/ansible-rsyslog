@@ -1,9 +1,12 @@
 ---
 # tasks file for ansible-rsyslog
-- include: debian.yml
+- name: "Run installer tasks for Debian"
+  import_tasks: debian.yml
   when: ansible_os_family == "Debian"
 
-- include: redhat.yml
+- name: "Run installer tasks for Debian"
+  import_tasks: redhat.yml
   when: ansible_os_family == "RedHat"
 
-- meta: flush_handlers
+- name: Flush handlers
+  meta: flush_handlers
