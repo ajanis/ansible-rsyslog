@@ -1,4 +1,7 @@
 {{ ansible_managed|comment }}
+###############
+#### RULES ####
+###############
 
 {% if rsyslog_options|length>0 %}
 {% for option in rsyslog_options %}
