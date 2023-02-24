@@ -4,38 +4,38 @@
 #### MODULES ####
 #################
 
-$ModLoad imuxsock # provides support for local system logging
-$ModLoad imklog   # provides kernel logging support
-#$ModLoad immark  # provides --MARK-- message capability
+module(load="imuxsock") # provides support for local system logging
+module(load="imklog")   # provides kernel logging support
+#module(load="immark")  # provides --MARK-- message capability
 
 # provides UDP syslog reception
 {% if (rsyslog_allow_udp is defined and not rsyslog_allow_udp) or rsyslog_allow_udp is not defined %}
-#$ModLoad imudp
-#$UDPServerRun 514
+#module(load="imudp")
+#input(type="imudp" port="514")
 {% elif rsyslog_allow_udp is defined and rsyslog_allow_udp %}
-$ModLoad imudp
+module(load="imudp")
 {% if rsyslog_udp_port is defined %}
-$UDPServerRun {{ rsyslog_udp_port }}
+input(type="imudp" port="{{ rsyslog_udp_port }}")
 {% else %}
-$UDPServerRun 514
+input(type="imudp" port="514")
 {% endif %}
 {% endif %}
 
 # provides TCP syslog reception
 {% if (rsyslog_allow_tcp is defined and not rsyslog_allow_tcp) or rsyslog_allow_tcp is not defined %}
-#$ModLoad imtcp
-#$InputTCPServerRun 514
+#module(load="imtcp")
+#input(type="imtcp" port="514")
 {% elif rsyslog_allow_tcp is defined and rsyslog_allow_tcp %}
-$ModLoad imtcp
+module(load="imtcp")
 {% if rsyslog_tcp_port is defined %}
-$InputTCPServerRun {{ rsyslog_tcp_port }}
+input(type="imtcp" port="{{ rsyslog_tcp_port }}")
 {% else %}
-$InputTCPServerRun 514
+input(type="imtcp" port="514")
 {% endif %}
 {% endif %}
 
 # Enable non-kernel facility klog messages
-$KLogPermitNonKernelFacility on
+# $KLogPermitNonKernelFacility on
 
 ###########################
 #### GLOBAL DIRECTIVES ####
@@ -61,13 +61,12 @@ $RepeatedMsgReduction on
 #
 # Set the default permissions for all log files.
 #
-$FileOwner syslog
+$FileOwner root
 $FileGroup adm
 $FileCreateMode 0640
 $DirCreateMode 0755
 $Umask 0022
-$PrivDropToUser syslog
-$PrivDropToGroup syslog
+
 
 #
 # Where to place spool and state files
