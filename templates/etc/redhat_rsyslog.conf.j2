@@ -34,10 +34,10 @@ $ModLoad immark
 
 {% if (rsyslog_highprecision is defined and rsyslog_highprecision) %}
 # To enable high precision timestamps, comment out the following line.
-$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+#$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
 {% elif rsyslog_highprecision is defined and not rsyslog_highprecision %}
 # To enable traditional low-precision timestamps, uncomment the following line.
-#$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
 {% endif %}
 
 # Where to place auxiliary files
@@ -46,11 +46,8 @@ $WorkDirectory /var/lib/rsyslog
 # File syncing capability is disabled by default. This feature is usually not required, not useful and an extreme performance hit
 #$ActionFileEnableSync on
 
-# Include all config files in /etc/rsyslog.d/
-$IncludeConfig /etc/rsyslog.d/*.conf
-
 # Turn off message reception via local log socket; local messages are retrieved through imjournal now.
-$OmitLocalLogging on
+#$OmitLocalLogging on
 
 # File to store the position in the journal
 $IMJournalStateFile imjournal.state
