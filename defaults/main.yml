@@ -2,59 +2,92 @@
 # defaults file for ansible-rsyslog
 
 # defines if rsyslog should be reconfigured
-rsyslog_config: false
+rsyslog_config: true
 
 # defines primary domain name
-rsyslog_pri_domain_name: "{{ www_domain|default('example.org') }}"
+rsyslog_pri_domain_name: "{{ www_domain | default('example.org') }}"
+
+# defines config files
+rsyslog_config_file: /etc/rsyslog.conf
+rsyslog_default_rules_file: /etc/rsyslog.d/50-default.conf
+
+rsyslog_modules:
+  # - imuxsock
+  - imjournal
+  - imklog
+  - immark
 
 # defines if high precision timestamps should be used instead of the traditional log format
 rsyslog_highprecision: false
+rsyslog_omit_local_logging: true
+rsyslog_action_file_enable_sync: false
 
 # defines if rsyslog should be configured to listen on tcp/514
 rsyslog_allow_tcp: false
-
 # sets the TCP port rsyslog should listen on if TCP is enabled. 514 is the IANA assigned port
 rsyslog_tcp_port: 514
 
 # defines if rsyslog should be configured to listen on udp/514
 rsyslog_allow_udp: false
-
 # sets the UDP port rsyslog should listen on if UDP is enabled. 514 is the IANA assigned port
 rsyslog_udp_port: 514
 
 rsyslog_options:
-  []
-  # - $ActionQueueType LinkedList # use asynchronous processing
-  # - $ActionQueueFileName srvrfwd # set file name, also enables disk mode
-  # - $ActionResumeRetryCount -1 # infinite retries on insert failure
-  # - $ActionQueueSaveOnShutdown on # save in-memory data if rsyslog shuts down
+  - option: $MaxMessageSize
+    value: 64k
+  - option: $PreserveFQDN
+    value: "on"
+  - option: $WorkDirectory
+    value: "{{ '/var/lib/rsyslog' if ansible_os_family == 'RedHat' else '/var/spool/rsyslog' }}"
+  - option: $KLogPermitNonKernelFacility
+    value: "on"
+  - option: $FileOwner
+    value: root
+  - option: $FileGroup
+    value: root
+  - option: $FileCreateMode
+    value: "0640"
+  - option: $DirCreateMode
+    value: "0755"
+  - option: $Umask
+    value: "0022"
+  - option: $ActionQueueType
+    value: LinkedList
+  - option: $ActionQueueFileName
+    value: srvrfwd
+  - option: $ActionResumeRetryCount
+    value: "-1"
+  - option: $ActionQueueSaveOnShutdown
+    value: "on"
+  - option: $ActionQueueMaxDiskSpace
+    value: 1g
+  - option: $IncludeConfig
+    value: /etc/rsyslog.d/*.conf
 
-# defines remote syslog servers
-rsyslog_servers:
-  []
-  # - name: "graylog.{{ rsyslog_pri_domain_name }}"
-  #   proto: udp
-  #   port: 514
-  #   selectors:
-  #     - authpriv.*
-  # - name: "logstash.{{ rsyslog_pri_domain_name }}"
-  #   proto: tcp
-  #   port: 514
-  #   selectors:
-  #     - "*.warn"
-  # - name: localhost #good for redirecting back itself..ex. logstash running on tcp/udp 10514...to get around logstash running on ports < 1024
-  #   proto: tcp
-  #   port: 10514
-  #   selectors:
-  #     - "*.*"
-  # Telegraf Example
-  # - name: (o)127.0.0.1
-  #   proto: tcp
-  #   port: 6514
-  #   format: RSYSLOG_SyslogProtocol23Format
+# Defines remote syslog servers
+rsyslog_servers: []
+# - name: "graylog.{{ rsyslog_pri_domain_name }}"
+#   proto: udp
+#   port: 514
+#   selectors:
+#     - authpriv.*
+# - name: "logstash.{{ rsyslog_pri_domain_name }}"
+#   proto: tcp
+#   port: 514
+#   selectors:
+#     - "*.warn"
+# - name: localhost #good for redirecting back itself..ex. logstash running on tcp/udp 10514...to get around logstash running on ports < 1024
+#   proto: tcp
+#   port: 10514
+#   selectors:
+#     - "*.*"
+# Telegraf Example
+# - name: (o)127.0.0.1
+#   proto: tcp
+#   port: 6514
+#   format: RSYSLOG_SyslogProtocol23Format
 
-
-# defines rsyslog outputs to local log files:
+# Defines rsyslog outputs to local log files:
 rsyslog_localfiles:
   - name: /var/log/auth.log
     proto: file
@@ -64,8 +97,8 @@ rsyslog_localfiles:
     selectors:
       - "*.*"
       - auth,authpriv.none
-  # - name: /var/log/cron.log
-  #   selectors: ['cron.*']
+  - name: /var/log/cron.log
+    selectors: [cron.*]
   - name: /var/log/daemon.log
     selectors: daemon.*
   - name: /var/log/kern.log
@@ -78,10 +111,8 @@ rsyslog_localfiles:
     selectors: mail.*
   - name: /var/log/user.log
     selectors: user.*
-  #
   # Logging for the mail system.  Split it up so that
   # it is easy to write scripts to parse these files.
-  #
   - name: /var/log/mail.info
     proto: nosync
     selectors: mail.info
@@ -90,8 +121,7 @@ rsyslog_localfiles:
     selectors: mail.warn
   - name: /var/log/mail.err
     selectors: mail.err
-  #
-  #
+
   # Logging for INN news system.
   #
   # - name: /var/log/news/news.crit
@@ -101,9 +131,8 @@ rsyslog_localfiles:
   # - name: /var/log/news/news.notice
   #   proto: nosync
   #   selectors: news.notice
-  #
+
   # Some "catch-all" log files.
-  #
   - name: /var/log/debug
     proto: nosync
     selectors:
@@ -122,41 +151,38 @@ rsyslog_localfiles:
 
 rsyslog_devices:
   # Emergencies are sent to everybody logged in.
-  #
-  - name: ":omusrmsg:*"
+  - name: :omusrmsg:*
     selectors: "*.emerg"
-  #
-  # I like to have messages displayed on the console, but only on a virtual
-  # console I usually leave idle.
-  #
-  # - name: /dev/tty8
-  #   selectors:
-  #     - "daemon,mail.*"
-  #     - news.=crit
-  #     - news.=err
-  #     - "news.=notice"
-  #     - "*.=debug"
-  #     - "*.=info"
-  #     - "*.=notice"
-  #     - "*.=warn"
-  #
-  # The named pipe /dev/xconsole is for the `xconsole' utility.  To use it,
-  # you must invoke `xconsole' with the `-file' option:
-  #
-  #    $ xconsole -file /dev/xconsole [...]
-  #
-  # NOTE: adjust the list below, or you'll go crazy if you have a reasonably
-  #      busy site..
-  #
-  # - name: /dev/xconsole
-  #   proto: pipe
-  #   selectors:
-  #     - daemon.*
-  #     - mail.*
-  #     - news.err
-  #     - "*.=debug"
-  #     - "*.=info"
-  #     - "*.=notice"
-  #     - "*.=warn"
 
-rsyslog_defaults: "{{ rsyslog_servers|union(rsyslog_localfiles)|union(rsyslog_devices) }}"
+# Virtual console logs
+# - name: /dev/tty8
+#   selectors:
+#     - "daemon,mail.*"
+#     - news.=crit
+#     - news.=err
+#     - "news.=notice"
+#     - "*.=debug"
+#     - "*.=info"
+#     - "*.=notice"
+#     - "*.=warn"
+#
+# The named pipe /dev/xconsole is for the `xconsole' utility.  To use it,
+# you must invoke `xconsole' with the `-file' option:
+#
+#    $ xconsole -file /dev/xconsole [...]
+#
+# NOTE: adjust the list below, or you'll go crazy if you have a reasonably
+#      busy site..
+#
+# - name: /dev/xconsole
+#   proto: pipe
+#   selectors:
+#     - daemon.*
+#     - mail.*
+#     - news.err
+#     - "*.=debug"
+#     - "*.=info"
+#     - "*.=notice"
+#     - "*.=warn"
+
+rsyslog_defaults: "{{ rsyslog_servers | union(rsyslog_localfiles) | union(rsyslog_devices) }}"

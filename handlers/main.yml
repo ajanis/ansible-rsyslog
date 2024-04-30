@@ -1,7 +1,6 @@
 ---
 # handlers file for ansible-rsyslog
-- name: restart rsyslog
-  service:
-    name: rsyslog
-    state: restarted
-  become: true
+- name: Set restart rsyslog fact
+  listen: restart rsyslog
+  ansible.builtin.set_fact:
+    rsyslog_require_restart: true

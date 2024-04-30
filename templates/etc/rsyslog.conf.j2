@@ -4,76 +4,32 @@
 #### GLOBAL DIRECTIVES ####
 ###########################
 
+# Provides TCP syslog reception
+{{ '#' if not rsyslog_allow_tcp else '' }}$ModLoad imtcp
+{{ '#' if not rsyslog_allow_tcp else '' }}$InputTCPServerRun {{ rsyslog_tcp_port|default('514') }}
+# Provides UDP syslog reception
+{{ '#' if not rsyslog_allow_udp else '' }}$ModLoad imudp
+{{ '#' if not rsyslog_allow_udp else '' }}$UDPServerRun {{ rsyslog_tcp_port|default('514') }}
 
-# Increase message size
-$MaxMessageSize 64k
 
-#################
-#### MODULES ####
-#################
+{{ '#' if not 'imuxsock'  in rsyslog_modules else '' }}$ModLoad imuxsock  # provides support for local system logging (e.g. via logger command)
+{{ '#' if not 'imjournal' in rsyslog_modules else '' }}$ModLoad imjournal # provides access to the systemd journal
+{{ '#' if not 'imklog'    in rsyslog_modules else '' }}$ModLoad imklog    # provides kernel logging support
+{{ '#' if not 'immark'    in rsyslog_modules else '' }}$ModLoad immark    # provides --MARK-- message capability
+{{ '#' if not 'imfile'    in rsyslog_modules else '' }}$ModLoad imfile    # provides access to specific log file
 
-# provides UDP syslog reception
-{% if (rsyslog_allow_udp is defined and rsyslog_allow_udp) %}
-$ModLoad imudp
-$UDPServerRun {{ rsyslog_udp_port|default('514') }}
-{% else %}
-#$InputModLoad imudp
-#$UDPServerRun 514
-{% endif %}
 
-# provides TCP syslog reception
-{% if rsyslog_allow_tcp is defined and rsyslog_allow_tcp %}
-$ModLoad imtcp
-$InputTCPServerRun {{ rsyslog_tcp_port|default('514') }}
-{% else %}
-#$ModLoad imtcp
-#$InputTCPServerRun 514
-{% endif %}
+# File syncing capability is disabled by default. This feature is usually not required,
+# not useful and an extreme performance hit
+{{ '#' if not rsyslog_action_file_enable_sync else '' }}$ActionFileEnableSync on
 
-$ModLoad imuxsock
-# Provides access to the systemd journal
-$ModLoad imjournal
-
-# Reads kernel messages (the same are read from journald)
-$ModLoad imklog
-
-# Provides --MARK-- message capability
-$ModLoad immark
-
-###########################
-## ADDITIONAL DIRECTIVES ##
-###########################
-
-{% if (rsyslog_highprecision is defined and rsyslog_highprecision) %}
-# To enable high precision timestamps, comment out the following line.
-$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
-{% elif rsyslog_highprecision is defined and not rsyslog_highprecision %}
-# To enable traditional low-precision timestamps, uncomment the following line.
-#$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
-{% endif %}
-
-# Where to place auxiliary files
-$WorkDirectory {{ '/var/lib/rsyslog' if ansible_os_family == 'RedHat' else '/var/spool/rsyslog' }}
-
-# File syncing capability is disabled by default. This feature is usually not required, not useful and an extreme performance hit
-#$ActionFileEnableSync on
-
-# Turn off message reception via local log socket; local messages are retrieved through imjournal now.
-#$OmitLocalLogging on
+# Turn off message reception via local log socket;
+# local messages are retrieved through imjournal now.
+{{ '#' if 'imuxsock' in rsyslog_modules or not rsyslog_omit_local_logging else '' }}$OmitLocalLogging on
 
 # File to store the position in the journal
-$IMJournalStateFile imjournal.state
+{{ '#' if not 'imjournal' in rsyslog_modules else '' }}$IMJournalStateFile imjournal.state
 
-# Enable non-kernel facility klog messages
-$KLogPermitNonKernelFacility on
-
-# File Permissions
-$FileOwner root
-$FileGroup adm
-$FileCreateMode 0640
-$DirCreateMode 0755
-$Umask 0022
-
-
-# Include all config files in /etc/rsyslog.d/
-$IncludeConfig /etc/rsyslog.d/*.conf
+{% for item in rsyslog_options %}
+  {{ item.option }} {{ item.value }}
+{% endfor %}
