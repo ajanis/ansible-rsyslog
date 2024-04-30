@@ -1,43 +1,73 @@
 {{ ansible_managed|comment }}
 
-#### MODULES ####
+##### GLOBAL DIRECTIVES ####
 
-# The imjournal module bellow is now used as a message source instead of imuxsock.
-$ModLoad imuxsock # provides support for local system logging (e.g. via logger command)
-$ModLoad imjournal # provides access to the systemd journal
-#$ModLoad imklog # reads kernel messages (the same are read from journald)
-#$ModLoad immark  # provides --MARK-- message capability
-
-# Provides UDP syslog reception
-#$ModLoad imudp
+# Increase message size
+$MaxMessageSize 64k
+# provides UDP syslog reception
+{% if (rsyslog_allow_udp is defined and rsyslog_allow_udp) %}
+$ModLoad imudp
+$UDPServerRun {{ rsyslog_udp_port|default('514') }}
+{% else %}
+#$InputModLoad imudp
 #$UDPServerRun 514
+{% endif %}
 
-# Provides TCP syslog reception
+# provides TCP syslog reception
+{% if rsyslog_allow_tcp is defined and rsyslog_allow_tcp %}
+$ModLoad imtcp
+$InputTCPServerRun {{ rsyslog_tcp_port|default('514') }}
+{% else %}
 #$ModLoad imtcp
 #$InputTCPServerRun 514
+{% endif %}
 
+$ModLoad imuxsock
+# Provides access to the systemd journal
+$ModLoad imjournal
 
-#### GLOBAL DIRECTIVES ####
+# Reads kernel messages (the same are read from journald)
+$ModLoad imklog
+
+# Provides --MARK-- message capability
+$ModLoad immark
+
+{% if (rsyslog_highprecision is defined and rsyslog_highprecision) %}
+# To enable high precision timestamps, comment out the following line.
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+{% elif rsyslog_highprecision is defined and not rsyslog_highprecision %}
+# To enable traditional low-precision timestamps, uncomment the following line.
+#$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+{% endif %}
 
 # Where to place auxiliary files
 $WorkDirectory /var/lib/rsyslog
 
-# Use default timestamp format
-$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
-
-# File syncing capability is disabled by default. This feature is usually not required,
-# not useful and an extreme performance hit
+# File syncing capability is disabled by default. This feature is usually not required, not useful and an extreme performance hit
 #$ActionFileEnableSync on
 
 # Include all config files in /etc/rsyslog.d/
 $IncludeConfig /etc/rsyslog.d/*.conf
 
-# Turn off message reception via local log socket;
-# local messages are retrieved through imjournal now.
+# Turn off message reception via local log socket; local messages are retrieved through imjournal now.
 $OmitLocalLogging on
 
 # File to store the position in the journal
 $IMJournalStateFile imjournal.state
+
+# Enable non-kernel facility klog messages
+$KLogPermitNonKernelFacility on
+
+# File Permissions
+$FileOwner root
+$FileGroup adm
+$FileCreateMode 0640
+$DirCreateMode 0755
+$Umask 0022
+
+# Include all config files in /etc/rsyslog.d/
+#
+$IncludeConfig /etc/rsyslog.d/*.conf
 
 
 #### RULES ####
