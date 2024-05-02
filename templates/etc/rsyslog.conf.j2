@@ -1,35 +1,46 @@
 {{ ansible_managed|comment }}
 
-###########################
-#### GLOBAL DIRECTIVES ####
-###########################
+#### MODULES ####
+# Global umask for all actions
+$umask {{ rsyslog_umask | default('0022') }}
+
+# Set the default permissions for all log files.
+module(load="builtin:omfile"
+{% for setting in rsyslog_options %}
+{% if setting.value is sequence and setting.value is not string %}
+{% for value2 in setting.value %}
+        {{ setting.option }}={{ value2|to_json }}
+{% endfor %}
+{% else %}
+        {{ setting.option }}={{ setting.value|to_json }}
+{% endif %}
+{% endfor %}
+)
+
+{{ '#' if not 'imjournal' in rsyslog_modules else '' }}module(load="imjournal") # provides access to the systemd journal
+{{ '#' if not 'imuxsock'  in rsyslog_modules else '' }}module(load="imuxsock") # provides support for local system logging (e.g. via logger command)
+{{ '#' if not 'imklog'    in rsyslog_modules else '' }}module(load="imklog")   # provides kernel logging support (previously done by rklogd)
+{{ '#' if not 'immark'    in rsyslog_modules else '' }}module(load="immark")  # provides --MARK-- message capability
+
+# Provides UDP syslog reception
+# for parameters see http://www.rsyslog.com/doc/imudp.html
+{{ '#' if not rsyslog_allow_udp else '' }}module(load="imudp") # needs to be done just once
+{{ '#' if not rsyslog_allow_udp else '' }}input(type="imudp" port="{{ rsyslog_udp_port|default('514') }}")
 
 # Provides TCP syslog reception
-{{ '#' if not rsyslog_allow_tcp else '' }}$ModLoad imtcp
-{{ '#' if not rsyslog_allow_tcp else '' }}$InputTCPServerRun {{ rsyslog_tcp_port|default('514') }}
-# Provides UDP syslog reception
-{{ '#' if not rsyslog_allow_udp else '' }}$ModLoad imudp
-{{ '#' if not rsyslog_allow_udp else '' }}$UDPServerRun {{ rsyslog_tcp_port|default('514') }}
+# for parameters see http://www.rsyslog.com/doc/imtcp.html
+{{ '#' if not rsyslog_allow_tcp else '' }}module(load="imtcp") # needs to be done just once
+{{ '#' if not rsyslog_allow_tcp else '' }}input(type="imtcp" port="{{ rsyslog_tcp_port|default('514') }}")
 
 
-{{ '#' if not 'imuxsock'  in rsyslog_modules else '' }}$ModLoad imuxsock  # provides support for local system logging (e.g. via logger command)
-{{ '#' if not 'imjournal' in rsyslog_modules else '' }}$ModLoad imjournal # provides access to the systemd journal
-{{ '#' if not 'imklog'    in rsyslog_modules else '' }}$ModLoad imklog    # provides kernel logging support
-{{ '#' if not 'immark'    in rsyslog_modules else '' }}$ModLoad immark    # provides --MARK-- message capability
-{{ '#' if not 'imfile'    in rsyslog_modules else '' }}$ModLoad imfile    # provides access to specific log file
+#### GLOBAL DIRECTIVES ####
 
+# drop privileges
+{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToUser {{ rsyslog_priv_drop_user|default('syslog') }}
+{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToGroup {{ rsyslog_priv_drop_group|default('syslog') }}
 
-# File syncing capability is disabled by default. This feature is usually not required,
-# not useful and an extreme performance hit
-{{ '#' if not rsyslog_action_file_enable_sync else '' }}$ActionFileEnableSync on
+# global directory
+global(workDirectory={{ "/var/lib/rsyslog" if ansible_os_family == "RedHat" else "/var/spool/rsyslog" }})
 
-# Turn off message reception via local log socket;
-# local messages are retrieved through imjournal now.
-{{ '#' if 'imuxsock' in rsyslog_modules or not rsyslog_omit_local_logging else '' }}$OmitLocalLogging on
-
-# File to store the position in the journal
-{{ '#' if not 'imjournal' in rsyslog_modules else '' }}$IMJournalStateFile imjournal.state
-
-{% for item in rsyslog_options %}
-  {{ item.option }} {{ item.value }}
-{% endfor %}
+# Include all config files in /etc/rsyslog.d/
+$IncludeConfig /etc/rsyslog.d/*.conf
