@@ -36,6 +36,7 @@ rsyslog_priv_drop: false
 rsyslog_priv_drop_user: root
 rsyslog_priv_drop_group: root
 
+rsyslog_global_work_directory: "{{ '/var/lib/rsyslog' if ansible_os_family == 'RedHat' else '/var/spool/rsyslog' }}"
 # options for all file logs
 rsyslog_options:
   - option: template

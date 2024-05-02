@@ -1,4 +1,4 @@
-{{ ansible_managed|comment }}
+{{ ansible_managed | comment }}
 
 #### MODULES ####
 # Global umask for all actions
@@ -9,10 +9,10 @@ module(load="builtin:omfile"
 {% for setting in rsyslog_options %}
 {% if setting.value is sequence and setting.value is not string %}
 {% for value2 in setting.value %}
-        {{ setting.option }}={{ value2|to_json }}
+        {{ setting.option }}={{ value2 | to_json }}
 {% endfor %}
 {% else %}
-        {{ setting.option }}={{ setting.value|to_json }}
+        {{ setting.option }}={{ setting.value | to_json }}
 {% endif %}
 {% endfor %}
 )
@@ -25,22 +25,22 @@ module(load="builtin:omfile"
 # Provides UDP syslog reception
 # for parameters see http://www.rsyslog.com/doc/imudp.html
 {{ '#' if not rsyslog_allow_udp else '' }}module(load="imudp") # needs to be done just once
-{{ '#' if not rsyslog_allow_udp else '' }}input(type="imudp" port="{{ rsyslog_udp_port|default('514') }}")
+{{ '#' if not rsyslog_allow_udp else '' }}input(type="imudp" port="{{ rsyslog_udp_port | default('514') }}")
 
 # Provides TCP syslog reception
 # for parameters see http://www.rsyslog.com/doc/imtcp.html
 {{ '#' if not rsyslog_allow_tcp else '' }}module(load="imtcp") # needs to be done just once
-{{ '#' if not rsyslog_allow_tcp else '' }}input(type="imtcp" port="{{ rsyslog_tcp_port|default('514') }}")
+{{ '#' if not rsyslog_allow_tcp else '' }}input(type="imtcp" port="{{ rsyslog_tcp_port | default('514') }}")
 
 
 #### GLOBAL DIRECTIVES ####
 
 # drop privileges
-{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToUser {{ rsyslog_priv_drop_user|default('syslog') }}
-{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToGroup {{ rsyslog_priv_drop_group|default('syslog') }}
+{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToUser {{ rsyslog_priv_drop_user | default('syslog') }}
+{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToGroup {{ rsyslog_priv_drop_group | default('syslog') }}
 
-# global directory
-global(workDirectory={{ "/var/lib/rsyslog" if ansible_os_family == "RedHat" else "/var/spool/rsyslog" }})
+# global work directory
+global(workDirectory="{{ rsyslog_global_work_directory }}")
 
 # Include all config files in /etc/rsyslog.d/
 $IncludeConfig /etc/rsyslog.d/*.conf
