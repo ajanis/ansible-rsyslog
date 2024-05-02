@@ -40,7 +40,7 @@ module(load="builtin:omfile"
 {{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToGroup {{ rsyslog_priv_drop_group | default('syslog') }}
 
 # global work directory
-global(workDirectory="{{ rsyslog_global_work_directory }}")
+global(workDirectory={{ rsyslog_global_work_directory | to_json }})
 
 # Include all config files in /etc/rsyslog.d/
 $IncludeConfig /etc/rsyslog.d/*.conf
