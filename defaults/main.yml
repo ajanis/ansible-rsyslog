@@ -11,17 +11,15 @@ rsyslog_pri_domain_name: "{{ www_domain | default('example.org') }}"
 rsyslog_config_file: /etc/rsyslog.conf
 rsyslog_default_rules_file: /etc/rsyslog.d/50-default.conf
 
+# enable modules
 rsyslog_modules:
-  # - imuxsock
-  - imjournal
+  - imuxsock
+  # - imjournal
   - imklog
   - immark
 
 # defines if high precision timestamps should be used instead of the traditional log format
 rsyslog_highprecision: false
-rsyslog_omit_local_logging: true
-rsyslog_action_file_enable_sync: false
-
 # defines if rsyslog should be configured to listen on tcp/514
 rsyslog_allow_tcp: false
 # sets the TCP port rsyslog should listen on if TCP is enabled. 514 is the IANA assigned port
@@ -32,37 +30,28 @@ rsyslog_allow_udp: false
 # sets the UDP port rsyslog should listen on if UDP is enabled. 514 is the IANA assigned port
 rsyslog_udp_port: 514
 
+rsyslog_umask: "0022"
+# drop privileges
+rsyslog_priv_drop: false
+rsyslog_priv_drop_user: root
+rsyslog_priv_drop_group: root
+
+# options for all file logs
 rsyslog_options:
-  - option: $MaxMessageSize
-    value: 64k
-  - option: $PreserveFQDN
-    value: "on"
-  - option: $WorkDirectory
-    value: "{{ '/var/lib/rsyslog' if ansible_os_family == 'RedHat' else '/var/spool/rsyslog' }}"
-  - option: $KLogPermitNonKernelFacility
-    value: "on"
-  - option: $FileOwner
-    value: root
-  - option: $FileGroup
-    value: root
-  - option: $FileCreateMode
-    value: "0640"
-  - option: $DirCreateMode
+  - option: template
+    value: "{{ 'RSYSLOG_FileFormat' if rsyslog_highprecision else 'RSYSLOG_TraditionalFileFormat' }}"
+  - option: dirCreateMode
     value: "0755"
-  - option: $Umask
-    value: "0022"
-  - option: $ActionQueueType
-    value: LinkedList
-  - option: $ActionQueueFileName
-    value: srvrfwd
-  - option: $ActionResumeRetryCount
-    value: "-1"
-  - option: $ActionQueueSaveOnShutdown
-    value: "on"
-  - option: $ActionQueueMaxDiskSpace
-    value: 1g
-  - option: $IncludeConfig
-    value: /etc/rsyslog.d/*.conf
+  - option: dirOwner
+    value: syslog
+  - option: dirGroup
+    value: syslog
+  - option: fileCreateMode
+    value: "0640"
+  - option: fileOwner
+    value: syslog
+  - option: fileGroup
+    value: syslog
 
 # Defines remote syslog servers
 rsyslog_servers: []
