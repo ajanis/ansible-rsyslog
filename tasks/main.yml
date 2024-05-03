@@ -39,5 +39,5 @@
 - name: Start or Restart rsyslog service
   ansible.builtin.service:
     name: rsyslog
-    state: "{{ 'restarted' if (rsyslog_require_restart | default(false)) else started }}"
+    state: "{{ 'restarted' if (rsyslog_require_restart | default(false)) else 'started' }}"
     enabled: true
