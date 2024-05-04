@@ -4,43 +4,38 @@
 # Global umask for all actions
 $umask {{ rsyslog_umask | default('0022') }}
 
-# Set the default permissions for all log files.
-module(load="builtin:omfile"
-{% for setting in rsyslog_options %}
-{% if setting.value is sequence and setting.value is not string %}
-{% for value2 in setting.value %}
-        {{ setting.option }}={{ value2 | to_json }}
-{% endfor %}
-{% else %}
-        {{ setting.option }}={{ setting.value | to_json }}
-{% endif %}
-{% endfor %}
+
+{% for item in rsyslog_modules %}
+module(load={{item.name | to_json }}
+{%- if item.options is defined %}
+{%+ for key, value in item.options.items() %}
+ {{ key }}={{ value | to_json }}
+{% endfor -%}
+{%- endif -%}
 )
+{% endfor %}
 
-{{ '#' if not 'imjournal' in rsyslog_modules else '' }}module(load="imjournal") # provides access to the systemd journal
-{{ '#' if not 'imuxsock'  in rsyslog_modules else '' }}module(load="imuxsock") # provides support for local system logging (e.g. via logger command)
-{{ '#' if not 'imklog'    in rsyslog_modules else '' }}module(load="imklog")   # provides kernel logging support (previously done by rklogd)
-{{ '#' if not 'immark'    in rsyslog_modules else '' }}module(load="immark")  # provides --MARK-- message capability
-
-# Provides UDP syslog reception
-# for parameters see http://www.rsyslog.com/doc/imudp.html
-{{ '#' if not rsyslog_allow_udp else '' }}module(load="imudp") # needs to be done just once
-{{ '#' if not rsyslog_allow_udp else '' }}input(type="imudp" port="{{ rsyslog_udp_port | default('514') }}")
-
-# Provides TCP syslog reception
-# for parameters see http://www.rsyslog.com/doc/imtcp.html
-{{ '#' if not rsyslog_allow_tcp else '' }}module(load="imtcp") # needs to be done just once
-{{ '#' if not rsyslog_allow_tcp else '' }}input(type="imtcp" port="{{ rsyslog_tcp_port | default('514') }}")
+{% for item in rsyslog_inputs %}
+module(type={{item.name | to_json }}
+{%- if item.options is defined %}
+{%+ for key, value in item.options.items() %}
+ {{ key }}={{ value | to_json }}
+{%- endfor -%}
+{%- endif -%}
+)
+{% endfor %}
 
 
 #### GLOBAL DIRECTIVES ####
 
+{% if rsyslog_priv_drop %}
 # drop privileges
-{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToUser {{ rsyslog_priv_drop_user | default('syslog') }}
-{{ '#' if not rsyslog_priv_drop else '' }}$PrivDropToGroup {{ rsyslog_priv_drop_group | default('syslog') }}
+$PrivDropToUser {{ rsyslog_priv_drop_user }}
+$PrivDropToGroup {{ rsyslog_priv_drop_group }}
+{% endif %}
 
 # global work directory
 global(workDirectory={{ rsyslog_global_work_directory | to_json }})
 
-# Include all config files in /etc/rsyslog.d/
-$IncludeConfig /etc/rsyslog.d/*.conf
+# Include all config files in {{ rsyslog_conf_dir }}
+$IncludeConfig {{ rsyslog_conf_dir }}/*.conf

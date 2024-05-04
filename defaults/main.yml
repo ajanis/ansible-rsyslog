@@ -9,51 +9,73 @@ rsyslog_pri_domain_name: "{{ www_domain | default('example.org') }}"
 
 # defines config files
 rsyslog_config_file: /etc/rsyslog.conf
-rsyslog_default_rules_file: /etc/rsyslog.d/50-default.conf
+rsyslog_conf_dir: /etc/rsyslog.d
+rsyslog_default_rules_file: "{{ rsyslog_conf_dir }}/50-default.conf"
+
+# drop privileges
+rsyslog_priv_drop: true
+rsyslog_priv_drop_user: syslog
+rsyslog_priv_drop_group: syslog
+
+rsyslog_user: "{{ rsyslog_priv_drop_user if rsyslog_priv_drop else 'root' }}"
+rsyslog_group: "{{ rsyslog_priv_drop_group if rsyslog_priv_drop else 'root' }}"
+
+rsyslog_umask: "0022"
+
+rsyslog_global_work_directory: "{{ '/var/lib/rsyslog' if ansible_os_family == 'RedHat' else '/var/spool/rsyslog' }}"
 
 # enable modules
-rsyslog_modules:
-  - imuxsock
-  # - imjournal
-  - imklog
-  - immark
+# rsyslog_modules:
+#   - imuxsock
+#   # - imjournal
+#   - imklog
+#   - immark
 
 # defines if high precision timestamps should be used instead of the traditional log format
 rsyslog_highprecision: false
-# defines if rsyslog should be configured to listen on tcp/514
-rsyslog_allow_tcp: false
-# sets the TCP port rsyslog should listen on if TCP is enabled. 514 is the IANA assigned port
-rsyslog_tcp_port: 514
 
-# defines if rsyslog should be configured to listen on udp/514
-rsyslog_allow_udp: false
-# sets the UDP port rsyslog should listen on if UDP is enabled. 514 is the IANA assigned port
-rsyslog_udp_port: 514
+rsyslog_modules:
+  - name: builtin:omfwd
+  - name: builtin:omfile
+    options:
+      template: "{{ 'RSYSLOG_FileFormat' if rsyslog_highprecision else 'RSYSLOG_TraditionalFileFormat' }}"
+      dirCreateMode: "0755"
+      dirOwner: "{{ rsyslog_user }}"
+      dirGroup: "{{ rsyslog_group }}"
+      fileCreateMode: "0640"
+      fileOwner: "{{ rsyslog_user }}"
+      fileGroup: "{{ rsyslog_group }}"
+  - name: imjournal
+  - name: imuxsock
+  # - name: imklog
+  # - name: imtcp
+  # - name: imudp
 
-rsyslog_umask: "0022"
-# drop privileges
-rsyslog_priv_drop: false
-rsyslog_priv_drop_user: root
-rsyslog_priv_drop_group: root
+rsyslog_inputs: []
+# - name: imudp
+#   options:
+#     port: "514"
+# - name: imtcp
+#   options:
+#     port: "514"
 
-rsyslog_global_work_directory: "{{ '/var/lib/rsyslog' if ansible_os_family == 'RedHat' else '/var/spool/rsyslog' }}"
-# options for all file logs
-rsyslog_options:
-  - option: template
-    value: "{{ 'RSYSLOG_FileFormat' if rsyslog_highprecision else 'RSYSLOG_TraditionalFileFormat' }}"
-  - option: dirCreateMode
-    value: "0755"
-  - option: dirOwner
-    value: syslog
-  - option: dirGroup
-    value: syslog
-  - option: fileCreateMode
-    value: "0640"
-  - option: fileOwner
-    value: syslog
-  - option: fileGroup
-    value: syslog
+rsyslog_actions: []
+## Telegraf Example
+# - name: omfwd
+#   selectors:
+#     - "*.*"
+#   options:
+#     target: 127.0.0.1
+#     port: "6514"
+#     Template: RSYSLOG_SyslogProtocol23Format
+#     protocol: tcp
+#     TCP_Framing: octet-counted
+#     action.resumeRetryCount: "-1"
+#     queue.type: linkedlist
+#     queue.saveOnShutdown: "on"
+#     queue.filename: omfwd_log
 
+## LEGACY CONFIGS
 # Defines remote syslog servers
 rsyslog_servers: []
 # - name: "graylog.{{ rsyslog_pri_domain_name }}"

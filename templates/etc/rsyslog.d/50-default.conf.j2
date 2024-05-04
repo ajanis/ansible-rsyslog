@@ -1,8 +1,18 @@
 {{ ansible_managed|comment }}
 
-###############
-#### RULES ####
-###############
+### ADVANCED RULES ###
+{% for item in rsyslog_actions %}
+{%- set selector = [item.selectors|default('*.*')]|flatten|join(';') -%}
+{{ selector }} action(type={{item.name | to_json }}
+{%- if item.options is defined %}
+{%+ for key, value in item.options.items() %}
+  {{ key }}={{ value | to_json }}
+{% endfor -%}
+{%- endif -%}
+)
+{% endfor %}
+
+#### TRADITIONAL RULES ####
 
 # Set our initial redirects here to ensure we catch everything
 {% for item in rsyslog_defaults %}
