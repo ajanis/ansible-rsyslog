@@ -47,7 +47,7 @@ rsyslog_modules:
       fileGroup: "{{ rsyslog_group }}"
   - name: imjournal
   - name: imuxsock
-  # - name: imklog
+  - name: imklog
   # - name: imtcp
   # - name: imudp
 
@@ -98,68 +98,59 @@ rsyslog_servers: []
 #   proto: tcp
 #   port: 6514
 #   format: RSYSLOG_SyslogProtocol23Format
-
-# Defines rsyslog outputs to local log files:
 rsyslog_localfiles:
+  # Defines rsyslog outputs to local log files:
+  - name: contains, "error" /var/log/error.log
+    proto: nosync
+    selectors: :msg,
+  - name: stop
+    proto: nosync
+    selectors: "&"
+  - name: -/var/log/messages
+    proto: nosync
+    selectors:
+      - "*.info"
+      - "*.notice"
+      - "*.warn"
+      - auth,authpriv.none
+      - cron.none
+      - daemon.none
+      - mail.none
   - name: /var/log/auth.log
     proto: file
     selectors: auth,authpriv.*
-  - name: /var/log/syslog
+  - name: -/var/log/mail.log
+    proto: nosync
+    selectors: mail.*
+  - name: -/var/log/cron.log
+    proto: nosync
+    selectors: cron.*
+  - name: -/var/log/syslog
     proto: nosync
     selectors:
       - "*.*"
       - auth,authpriv.none
-  - name: /var/log/cron.log
-    selectors: [cron.*]
-  - name: /var/log/daemon.log
-    selectors: daemon.*
-  - name: /var/log/kern.log
+      - kern.none
+      - local*.none
+  - name: -/var/log/kern.log
     proto: nosync
     selectors: kern.*
-  - name: /var/log/lpr.log
+  - name: stop
     proto: nosync
-    selectors: lpr.*
-  - name: /var/log/mail.log
-    selectors: mail.*
-  - name: /var/log/user.log
-    selectors: user.*
-  # Logging for the mail system.  Split it up so that
-  # it is easy to write scripts to parse these files.
-  - name: /var/log/mail.info
-    proto: nosync
-    selectors: mail.info
-  - name: /var/log/mail.warn
-    proto: nosync
-    selectors: mail.warn
-  - name: /var/log/mail.err
-    selectors: mail.err
-
-  # Logging for INN news system.
-  #
-  # - name: /var/log/news/news.crit
-  #   selectors: news.crit
-  # - name: /var/log/news/news.err
-  #   selectors: news.err
-  # - name: /var/log/news/news.notice
-  #   proto: nosync
-  #   selectors: news.notice
-
-  # Some "catch-all" log files.
-  - name: /var/log/debug
+    selectors: kern.debug
+  - name: -/var/log/debug
     proto: nosync
     selectors:
       - "*.=debug"
       - auth,authpriv.none
+      - cron.none
+      - daemon.none
       - mail.none
-  - name: /var/log/messages
+      - news.none
+  - name: /var/log/boot.log
     proto: nosync
     selectors:
-      - "*.=info"
-      - "*.=notice"
-      - "*.=warn"
-      - auth,authpriv.none
-      - cron,daemon.none
-      - mail.none
+      - local7.*
 
 rsyslog_devices:
   # Emergencies are sent to everybody logged in.
