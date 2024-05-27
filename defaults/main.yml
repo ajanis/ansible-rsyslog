@@ -48,6 +48,7 @@ rsyslog_modules:
   - name: imjournal
   - name: imuxsock
   - name: imklog
+  # - name: imptcp
   # - name: imtcp
   # - name: imudp
 
@@ -58,7 +59,10 @@ rsyslog_inputs: []
 # - name: imtcp
 #   options:
 #     port: "514"
-
+# - name: imptcp
+#   options:
+#     port: "514"
+#     address="127.0.0.1"
 rsyslog_actions: []
 ## Telegraf Example
 # - name: omfwd
