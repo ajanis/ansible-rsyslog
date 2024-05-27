@@ -16,7 +16,7 @@ module(load={{item.name | to_json }}
 {% endfor %}
 
 {% for item in rsyslog_inputs %}
-module(type={{item.name | to_json }}
+input(type={{item.name | to_json }}
 {%- if item.options is defined %}
 {%+ for key, value in item.options.items() %}
  {{ key }}={{ value | to_json }}
