@@ -115,29 +115,24 @@ rsyslog_actions:
       - mail.none
       - cron.none
     options:
-      FileSizeLimit: 10M
       File: /var/log/syslog
   - name: omfile
     selectors:
       - auth,authpriv*
     options:
-      FileSizeLimit: 10M
       File: /var/log/auth.log
   - name: omfile
     selectors:
       - kern.*
     options:
-      FileSizeLimit: 10M
       File: /var/log/kern.log
   - name: omfile - mail.*
     options:
-      FileSizeLimit: 10M
       File: /var/log/mail.log
   - name: omfile
     selectors:
       - cron.*
     options:
-      FileSizeLimit: 10M
       File: /var/log/cron.log
   - name: stop
     selectors: "*.*"
