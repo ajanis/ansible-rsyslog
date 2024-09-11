@@ -1,47 +1,48 @@
 ---
-- name: Wait for locks
-  ansible.builtin.include_tasks:
-    file: wait_for_locks.yml
+- name: Installation Tasks
+  tags:
+    - rsyslog-install
+  block:
+    - name: Wait for locks
+      ansible.builtin.include_tasks:
+        file: wait_for_locks.yml
+        apply:
+          tags:
+            - rsyslog-install
 
-# tasks file for ansible-rsyslog
-- name: Install rsyslog
-  ansible.builtin.package:
-    name: rsyslog
-    state: present
-  register: result
-  until: result is successful
+    - name: Install rsyslog
+      ansible.builtin.package:
+        name: rsyslog
+        state: present
+      register: result
+      until: result is successful
 
-- name: Configuring rsyslog.conf
-  ansible.builtin.template:
-    src: etc/rsyslog.conf.j2
-    dest: "{{ rsyslog_config_file }}"
-    owner: root
-    group: root
-    mode: "0644"
-  notify:
-    - restart rsyslog
-  when:
-    - rsyslog_config is defined
-    - rsyslog_config|bool
+- name: Configuration Tasks
+  tags:
+    - rsyslog-configure
+  block:
+    - name: Configuring rsyslog.conf
+      ansible.builtin.template:
+        src: etc/rsyslog.conf.j2
+        dest: "{{ rsyslog_config_file }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - restart rsyslog
+      when:
+        - rsyslog_config is defined
+        - rsyslog_config|bool
 
-- name: Configuring rsyslog rules
-  ansible.builtin.template:
-    src: etc/rsyslog.d/50-default.conf.j2
-    dest: "{{ rsyslog_default_rules_file }}"
-    owner: root
-    group: root
-    mode: "0644"
-  notify:
-    - restart rsyslog
-  when:
-    - rsyslog_config is defined
-    - rsyslog_config|bool
-
-- name: Flush handlers
-  ansible.builtin.meta: flush_handlers
-
-- name: Start or Restart rsyslog service
-  ansible.builtin.service:
-    name: rsyslog
-    state: "{{ 'restarted' if (rsyslog_require_restart | default(false)) else 'started' }}"
-    enabled: true
+    - name: Configuring rsyslog rules
+      ansible.builtin.template:
+        src: etc/rsyslog.d/50-default.conf.j2
+        dest: "{{ rsyslog_default_rules_file }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - restart rsyslog
+      when:
+        - rsyslog_config is defined
+        - rsyslog_config|bool
