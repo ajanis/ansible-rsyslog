@@ -24,21 +24,40 @@ rsyslog_umask: "0022"
 
 rsyslog_global_work_directory: "{{ '/var/lib/rsyslog' if ansible_os_family == 'RedHat' else '/var/spool/rsyslog' }}"
 
-# enable modules
-# rsyslog_modules:
-#   - imuxsock
-#   # - imjournal
-#   - imklog
-#   - immark
-
 # defines if high precision timestamps should be used instead of the traditional log format
 rsyslog_highprecision: false
+
+rsyslog_global_configuration: |
+  template(name="json-template" type="list" option.jsonf="on") {
+      property(outname="@timestamp" name="timereported" dateFormat="rfc3339" format="jsonf")
+      property(outname="host" name="hostname" format="jsonf")
+      property(outname="severity" name="syslogseverity" caseConversion="upper" format="jsonf" datatype="number")
+      property(outname="facility" name="syslogfacility" format="jsonf" datatype="number")
+      property(outname="syslog-tag" name="syslogtag" format="jsonf")
+      property(outname="source" name="app-name" format="jsonf" onEmpty="null")
+      property(outname="message" name="msg" format="jsonf")
+  }
+
+  template(name="PerHostLogs" type="string" string="/var/log/%HOSTNAME%/syslog.log")
+
+
+  {% if rsyslog_priv_drop | default(True) %}
+  # Set privileges
+  $PrivDropToUser {{ rsyslog_priv_drop_user }}
+  $PrivDropToGroup {{ rsyslog_priv_drop_group }}
+  {% endif %}
+  # Drop duplicate messages
+  $RepeatedMsgReduction on
+  # Set default template
+  $ActionFileDefaultTemplate {{ 'RSYSLOG_FileFormat' if rsyslog_highprecision else 'RSYSLOG_TraditionalFileFormat' }}
+  # Include all config files in {{ rsyslog_conf_dir }}
+  $IncludeConfig {{ rsyslog_conf_dir }}/*.conf
+
 
 rsyslog_modules:
   - name: builtin:omfwd
   - name: builtin:omfile
     options:
-      template: "{{ 'RSYSLOG_FileFormat' if rsyslog_highprecision else 'RSYSLOG_TraditionalFileFormat' }}"
       dirCreateMode: "0755"
       dirOwner: "{{ rsyslog_user }}"
       dirGroup: "{{ rsyslog_group }}"
@@ -46,38 +65,77 @@ rsyslog_modules:
       fileOwner: "{{ rsyslog_user }}"
       fileGroup: "{{ rsyslog_group }}"
   - name: imjournal
+    options:
+      StateFile: /var/run/journal.state # we write here where we left off
+      PersistStateInterval: "100"
   - name: imuxsock
   - name: imklog
   # - name: imptcp
-  # - name: imtcp
-  # - name: imudp
+  - name: imtcp
+  - name: imudp
 
-rsyslog_inputs: []
-# - name: imudp
-#   options:
-#     port: "514"
-# - name: imtcp
-#   options:
-#     port: "514"
-# - name: imptcp
-#   options:
-#     port: "514"
-#     address="127.0.0.1"
-rsyslog_actions: []
-## Telegraf Example
-# - name: omfwd
-#   selectors:
-#     - "*.*"
-#   options:
-#     target: 127.0.0.1
-#     port: "6514"
-#     Template: RSYSLOG_SyslogProtocol23Format
-#     protocol: tcp
-#     TCP_Framing: octet-counted
-#     action.resumeRetryCount: "-1"
-#     queue.type: linkedlist
-#     queue.saveOnShutdown: "on"
-#     queue.filename: omfwd_log
+rsyslog_inputs:
+  - name: imudp
+    options:
+      port: "514"
+  # - name: imptcp
+  #   options:
+  #     port: "514"
+  #     address: 0.0.0.0
+  - name: imtcp
+    options:
+      port: "514"
+      address: 0.0.0.0
+
+rsyslog_actions:
+  # - name: omfwd
+  #   selectors:
+  #     - "*.*"
+  #   options:
+  #     Target: 127.0.0.1
+  #     Port: "6514"
+  #     Template: RSYSLOG_SyslogProtocol23Format
+  #     Protocol: tcp
+  #     TCP_Framing: octet-counted
+  #     action.resumeRetryCount: "-1"
+  #     queue.type: linkedlist
+  #     queue.saveOnShutdown: "on"
+  #     queue.filename: omfwd_log
+  # - name: omfile
+  #   selectors:
+  #     - "*.*"
+  #     - auth,authpriv.none
+  #   options:
+  #     dynaFile: PerHostLogs
+  - name: omfile
+    selectors:
+      - "*.*"
+      - auth,authpriv.none
+      - kern.none
+      - mail.none
+      - cron.none
+    options:
+      File: /var/log/syslog
+  - name: omfile
+    selectors:
+      - auth,authpriv*
+    options:
+      File: /var/log/auth.log
+  - name: omfile
+    selectors:
+      - kern.*
+    options:
+      File: /var/log/kern.log
+  - name: omfile - mail.*
+    options:
+      File: /var/log/mail.log
+  - name: omfile
+    selectors:
+      - cron.*
+    options:
+      File: /var/log/cron.log
+  - name: stop
+    selectors: "*.*"
 
 ## LEGACY CONFIGS
 # Defines remote syslog servers
@@ -102,60 +160,7 @@ rsyslog_servers: []
 #   proto: tcp
 #   port: 6514
 #   format: RSYSLOG_SyslogProtocol23Format
-rsyslog_localfiles:
-  # Defines rsyslog outputs to local log files:
-  - name: contains, "error" /var/log/error.log
-    proto: nosync
-    selectors: :msg,
-  - name: stop
-    proto: nosync
-    selectors: "&"
-  - name: -/var/log/messages
-    proto: nosync
-    selectors:
-      - "*.info"
-      - "*.notice"
-      - "*.warn"
-      - auth,authpriv.none
-      - cron.none
-      - daemon.none
-      - mail.none
-  - name: /var/log/auth.log
-    proto: file
-    selectors: auth,authpriv.*
-  - name: -/var/log/mail.log
-    proto: nosync
-    selectors: mail.*
-  - name: -/var/log/cron.log
-    proto: nosync
-    selectors: cron.*
-  - name: -/var/log/syslog
-    proto: nosync
-    selectors:
-      - "*.*"
-      - auth,authpriv.none
-      - kern.none
-      - local*.none
-  - name: -/var/log/kern.log
-    proto: nosync
-    selectors: kern.*
-  - name: stop
-    proto: nosync
-    selectors: kern.debug
-  - name: -/var/log/debug
-    proto: nosync
-    selectors:
-      - "*.=debug"
-      - auth,authpriv.none
-      - cron.none
-      - daemon.none
-      - mail.none
-      - news.none
-  - name: /var/log/boot.log
-    proto: nosync
-    selectors:
-      - local7.*
-
+rsyslog_localfiles: []
 rsyslog_devices:
   # Emergencies are sent to everybody logged in.
   - name: :omusrmsg:*
