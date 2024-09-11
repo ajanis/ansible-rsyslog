@@ -3,13 +3,17 @@
 ### ADVANCED RULES ###
 {% for item in rsyslog_actions %}
 {%- set selector = [item.selectors|default('*.*')]|flatten|join(';') -%}
-{{ selector }} action(type={{item.name | to_json }}
-{%- if item.options is defined %}
-{%+ for key, value in item.options.items() %}
-  {{ key }}={{ value | to_json }}
-{% endfor -%}
+{%- if item.name != 'stop' -%}
+{%- if item.options is defined -%}
+{%- set action = {'type': item.name} | combine(item.options) -%}
 {%- endif -%}
-)
+{{ selector }} action(
+{% for key, value in action.items() %}
+ {{ key }}="{{ value }}"
+{% endfor %})
+{% else %}
+{{ selector }} stop
+{% endif %}
 {% endfor %}
 
 #### TRADITIONAL RULES ####

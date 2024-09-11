@@ -6,36 +6,32 @@ $umask {{ rsyslog_umask | default('0022') }}
 
 
 {% for item in rsyslog_modules %}
-module(load={{item.name | to_json }}
-{%- if item.options is defined %}
-{%+ for key, value in item.options.items() %}
- {{ key }}={{ value | to_json }}
-{% endfor -%}
+{%- set module = {'load': item.name} -%}
+{%- if item.options is defined -%}
+{%- set module = module | combine(item.options) -%}
 {%- endif -%}
-)
+module(
+{% for key, value in module.items() %}
+ {{ key }}="{{ value }}"
+{% endfor %})
 {% endfor %}
 
 {% for item in rsyslog_inputs %}
-input(type={{item.name | to_json }}
-{%- if item.options is defined %}
-{%+ for key, value in item.options.items() %}
- {{ key }}={{ value | to_json }}
-{%- endfor -%}
+{%- set input = {'type': item.name} -%}
+{%- if item.options is defined -%}
+{%- set input = input | combine(item.options) -%}
 {%- endif -%}
-)
+input(
+{% for key, value in input.items() %}
+ {{ key }}="{{ value }}"
+{% endfor %})
 {% endfor %}
 
-
-#### GLOBAL DIRECTIVES ####
-
-{% if rsyslog_priv_drop %}
-# drop privileges
-$PrivDropToUser {{ rsyslog_priv_drop_user }}
-$PrivDropToGroup {{ rsyslog_priv_drop_group }}
-{% endif %}
+#### GLOBAL WORK DIRECTORY ####
 
 # global work directory
 global(workDirectory={{ rsyslog_global_work_directory | to_json }})
 
-# Include all config files in {{ rsyslog_conf_dir }}
-$IncludeConfig {{ rsyslog_conf_dir }}/*.conf
+#### GLOBAL CONFIGS ####
+
+{{ rsyslog_global_configuration }}
