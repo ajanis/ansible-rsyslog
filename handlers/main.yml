@@ -5,3 +5,8 @@
     name: rsyslog
     state: restarted
     enabled: true
+- name: restart journald
+  ansible.builtin.service:
+    name: systemd-journald
+    state: restarted
+    enabled: true
