@@ -46,3 +46,16 @@
       when:
         - rsyslog_config is defined
         - rsyslog_config|bool
+
+    - name: Configuring journald.conf
+      ansible.builtin.template:
+        src: etc/systemd/journald.conf.j2
+        dest: "{{ rsyslog_journald_config }}"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - restart journald
+      when:
+        - rsyslog_journald.items | default(None) is not none
+        - rsyslog_journald.items() | length > 0

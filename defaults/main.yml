@@ -53,7 +53,6 @@ rsyslog_global_configuration: |
   # Include all config files in {{ rsyslog_conf_dir }}
   $IncludeConfig {{ rsyslog_conf_dir }}/*.conf
 
-
 rsyslog_modules:
   - name: builtin:omfwd
   - name: builtin:omfile
@@ -198,3 +197,37 @@ rsyslog_devices:
 #     - "*.=warn"
 
 rsyslog_defaults: "{{ rsyslog_servers | union(rsyslog_localfiles) | union(rsyslog_devices) }}"
+
+rsyslog_journald_config: /etc/systemd/journald.conf
+# rsyslog journald settings
+rsyslog_journald:
+  Storage: persistent
+  Compress: "yes"
+  SyncIntervalSec: 1m
+  SystemMaxUse: 5G
+  SystemMaxFileSize: 100M
+  SystemMaxFiles: "50"
+  RuntimeMaxUse: 2G
+  RuntimeMaxFileSize: 50M
+  RuntimeMaxFiles: "50"
+  Seal:
+  SplitMode:
+  RateLimitIntervalSec:
+  RateLimitBurst:
+  SystemKeepFree:
+  RuntimeKeepFree:
+  MaxRetentionSec:
+  MaxFileSec:
+  ForwardToSyslog:
+  ForwardToKMsg:
+  ForwardToConsole:
+  ForwardToWall:
+  TTYPath:
+  MaxLevelStore:
+  MaxLevelSyslog:
+  MaxLevelKMsg:
+  MaxLevelConsole:
+  MaxLevelWall:
+  LineMax:
+  ReadKMsg:
+  Audit:
