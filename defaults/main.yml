@@ -203,31 +203,31 @@ rsyslog_journald_config: /etc/systemd/journald.conf
 rsyslog_journald:
   Storage: persistent
   Compress: "yes"
-  SyncIntervalSec: 1m
+  SyncIntervalSec: 5m
   SystemMaxUse: 5G
   SystemMaxFileSize: 100M
   SystemMaxFiles: "50"
   RuntimeMaxUse: 2G
   RuntimeMaxFileSize: 50M
   RuntimeMaxFiles: "50"
-  Seal:
-  SplitMode:
-  RateLimitIntervalSec:
-  RateLimitBurst:
-  SystemKeepFree:
-  RuntimeKeepFree:
-  MaxRetentionSec:
-  MaxFileSec:
-  ForwardToSyslog:
-  ForwardToKMsg:
-  ForwardToConsole:
-  ForwardToWall:
-  TTYPath:
-  MaxLevelStore:
-  MaxLevelSyslog:
-  MaxLevelKMsg:
-  MaxLevelConsole:
-  MaxLevelWall:
-  LineMax:
-  ReadKMsg:
-  Audit:
+  RateLimitIntervalSec: 30s
+  RateLimitBurst: "10000"
+  "#Seal": true
+  "#SplitMode": uid
+  "#SystemKeepFree":
+  "#RuntimeKeepFree":
+  "#MaxRetentionSec":
+  "#MaxFileSec": 1month
+  "#ForwardToSyslog": true
+  "#ForwardToKMsg": false
+  "#ForwardToConsole": false
+  "#ForwardToWall": true
+  "#TTYPath": /dev/console
+  "#MaxLevelStore": debug
+  "#MaxLevelSyslog": debug
+  "#MaxLevelKMsg": notice
+  "#MaxLevelConsole": info
+  "#MaxLevelWall": emerg
+  "#LineMax": 48K
+  "#ReadKMsg": true
+  "#Audit": false

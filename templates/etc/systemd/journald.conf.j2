@@ -19,6 +19,6 @@
 {% if value | default(None) is not none %}
 {{ key }}={{ value }}
 {% else %}
-#{{ key }}=
+{{ key }}=
 {% endif %}
 {% endfor %}
