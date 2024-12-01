@@ -205,13 +205,13 @@ rsyslog_journald:
   Compress: "yes"
   SyncIntervalSec: 5m
   SystemMaxUse: 5G
-  SystemMaxFileSize: 100M
-  SystemMaxFiles: "50"
-  RuntimeMaxUse: 2G
-  RuntimeMaxFileSize: 50M
-  RuntimeMaxFiles: "50"
+  RuntimeMaxUse: 128M
   RateLimitIntervalSec: 30s
   RateLimitBurst: "10000"
+  "#SystemMaxFileSize": 100M
+  "#SystemMaxFiles": "50"
+  "#RuntimeMaxFileSize": 50M
+  "#RuntimeMaxFiles": "50"
   "#Seal": true
   "#SplitMode": uid
   "#SystemKeepFree":
