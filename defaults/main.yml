@@ -195,7 +195,7 @@ rsyslog_devices:
 #     - "*.=info"
 #     - "*.=notice"
 #     - "*.=warn"
-1
+
 rsyslog_defaults: "{{ rsyslog_servers | union(rsyslog_localfiles) | union(rsyslog_devices) }}"
 
 rsyslog_journald_config: /etc/systemd/journald.conf
