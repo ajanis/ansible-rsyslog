@@ -1,12 +1,12 @@
 ---
 # handlers file for ansible-rsyslog
 - name: restart rsyslog
-  ansible.builtin.service:
+  ansible.builtin.systemd:
     name: rsyslog
     state: restarted
     enabled: true
 - name: restart journald
-  ansible.builtin.service:
+  ansible.builtin.systemd:
     name: systemd-journald
     state: restarted
     enabled: true
